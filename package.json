@@ -30,6 +30,7 @@
     "react-dom": "18.2.0",
     "react-hot-toast": "^2.4.0",
     "react-icons": "^4.7.1",
+    "stripe": "^11.10.0",
     "superjson": "1.9.1",
     "tailwind-merge": "^1.9.1",
     "tailwindcss-animate": "^1.0.5",
