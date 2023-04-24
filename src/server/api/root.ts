@@ -1,4 +1,4 @@
-import { stripeRouter } from "./routers";
+import { stripeRouter, storageRouter } from "./routers";
 import { createTRPCRouter } from "./trpc";
 
 /**
@@ -8,6 +8,7 @@ import { createTRPCRouter } from "./trpc";
  */
 export const appRouter = createTRPCRouter({
   stripe: stripeRouter,
+  storage: storageRouter,
 });
 
 // export type definition of API
