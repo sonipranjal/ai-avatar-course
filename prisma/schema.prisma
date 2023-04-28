@@ -50,6 +50,21 @@ model User {
     accounts           Account[]
     sessions           Session[]
     isPaymentSucceeded Boolean   @default(false)
+    uniqueKeyword      String?
+    modelTrainingLimit Int       @default(0)
+    trainerVersion     String?
+    credits            Int       @default(50)
+    modelId            String?
+    images             Image[]
+}
+
+model Image {
+    id       String @id @default(cuid())
+    imageUrl String
+    userId   String
+    User     User   @relation(fields: [userId], references: [id])
+
+    @@index([userId])
 }
 
 model VerificationToken {

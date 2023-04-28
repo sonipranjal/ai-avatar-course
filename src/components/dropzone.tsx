@@ -6,6 +6,13 @@ import { Button } from "./ui/button";
 import { api } from "@/utils/api";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import ImageBlobReducer from "image-blob-reduce";
+
+//@ts-ignore
+import Pica from "pica";
+
+const pica = Pica({ features: ["js", "wasm", "cib"] });
+const ImageReducer = new ImageBlobReducer({ pica });
 
 type FILE_WITH_PREVIEW = File & { preview: string; id: string };
 
@@ -13,15 +20,43 @@ const Dropzone = () => {
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [files, setFiles] = useState<FILE_WITH_PREVIEW[]>([]);
 
+  const getAllUserUploadedImages =
+    api.storage.getAllUserUploadedImages.useQuery();
+
+  const triggerProcessingImages =
+    api.images.startProcessingImages.useMutation();
+
+  const utils = api.useContext();
+
   const getUploadUrls = api.storage.getUploadUrls.useMutation({
     onSuccess: async (data) => {
       try {
         setIsUploadingImages(true);
+
+        // now reduce the images size
+        // why we are reducing the size?
+        // when the user is uploaded all their images -> we have to start a background process
+
+        const resizedImages: Blob[] = [];
+
+        for (const photo of files) {
+          const resizedBlob = await ImageReducer.toBlob(
+            new Blob([photo], {
+              type: "image/jpeg",
+            }),
+            { max: 1000 }
+          );
+          resizedImages.push(resizedBlob);
+        }
+
         const uploadPromises = data.map((uploadUrl, i) => {
-          return axios.put(uploadUrl, files[i]);
+          return axios.put(uploadUrl, resizedImages[i]);
         });
 
         await Promise.all(uploadPromises);
+        utils.storage.getAllUserUploadedImages.invalidate();
+        // we should trigger processing images on the backend side
+        triggerProcessingImages.mutate();
       } catch (error) {
         toast.error("uploading images failed");
       } finally {
@@ -47,10 +82,15 @@ const Dropzone = () => {
         ...files,
       ];
 
-      allSelectedFiles.splice(10);
+      // check already uploaded images count and adjust the number of remaining images accordingly
+      const canUploadNow =
+        getAllUserUploadedImages.data?.uploadedImagesWithKeys.length;
+
+      allSelectedFiles.splice(10 - (canUploadNow ?? 0));
 
       setFiles(allSelectedFiles);
     },
+    maxFiles: 10,
   });
 
   useEffect(() => {

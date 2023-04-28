@@ -48,16 +48,13 @@ const stripeWebhook = async (req: NextApiRequest, res: NextApiResponse) => {
     const data: any = event.data.object;
 
     if (event.type === "charge.succeeded") {
-      await prisma.user.upsert({
+      await prisma.user.update({
         where: {
           email: data.billing_details.email,
         },
-        create: {
-          email: data.billing_details.email,
+        data: {
           isPaymentSucceeded: true,
-        },
-        update: {
-          isPaymentSucceeded: true,
+          modelTrainingLimit: 1,
         },
       });
     }
